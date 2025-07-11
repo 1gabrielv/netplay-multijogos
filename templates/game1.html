@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Redes - Jogo da Velha (TCP)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        /* Estilos específicos para o tabuleiro do jogo da velha */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            width: 315px; /* 3*100 + 2*5 */
+            height: 315px;
+            margin: 20px auto;
+            border: 2px solid #333;
+            background-color: #eee;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .cell:hover {
+            background-color: #e0e0e0;
+        }
+        .cell.x { color: #d9534f; }
+        .cell.o { color: #5cb85c; }
+        #game-info {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container game-container">
+        <h1>Jogo: Jogo da Velha - Confiabilidade Essencial (TCP)</h1>
+
+        <div id="connection-setup">
+            <input type="text" id="username-input" placeholder="Seu nome de usuário" required>
+            <input type="text" id="room-id-input" placeholder="ID da sala (opcional)">
+            <button id="join-room-btn">Entrar na Sala</button>
+            <p id="connection-status"></p>
+            <p id="players-in-room"></p>
+            <p id="my-sid"></p>
+        </div>
+
+        <div id="game-area" style="display: none;">
+            <p id="game-info">Aguardando oponentes...</p>
+            <div class="board" id="tic-tac-toe-board">
+                <div class="cell" data-index="0"></div>
+                <div class="cell" data-index="1"></div>
+                <div class="cell" data-index="2"></div>
+                <div class="cell" data-index="3"></div>
+                <div class="cell" data-index="4"></div>
+                <div class="cell" data-index="5"></div>
+                <div class="cell" data-index="6"></div>
+                <div class="cell" data-index="7"></div>
+                <div class="cell" data-index="8"></div>
+            </div>
+            <button id="reset-game-btn" style="display: none;">Reiniciar Jogo</button>
+        </div>
+
+        <div id="chat-area" style="display: none;">
+            <h2>Chat da Sala</h2>
+            <div id="chat-messages"></div>
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem...">
+            <button id="send-chat-btn">Enviar</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/game1.js') }}"></script>
+</body>
+</html>

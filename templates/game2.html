@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Redes - Pedra, Papel e Tesoura (UDP)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        .choices button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        .choices button:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container game-container">
+        <h1>Jogo: Pedra, Papel e Tesoura - Velocidade com Tolerância à Perda (UDP)</h1>
+
+        <div id="connection-setup">
+            <input type="text" id="username-input" placeholder="Seu nome de usuário" required>
+            <input type="text" id="room-id-input" placeholder="ID da sala (opcional)">
+            <button id="join-room-btn">Entrar na Sala</button>
+            <p id="connection-status"></p>
+            <p id="players-in-room"></p>
+            <p id="my-sid"></p>
+        </div>
+
+        <div id="game-area" style="display: none;">
+            <p id="game-info">Faça sua escolha!</p>
+            <div class="choices">
+                <button id="rock-btn">Pedra</button>
+                <button id="paper-btn">Papel</button>
+                <button id="scissors-btn">Tesoura</button>
+            </div>
+            <p id="results"></p>
+            <p id="my-choice">Sua escolha: Nenhuma</p>
+            <p id="opponent-choice">Escolha do oponente: Nenhuma</p>
+            <p id="round-status"></p>
+            <button id="reset-game-btn" style="display: none;">Reiniciar Jogo</button>
+        </div>
+
+        <div id="chat-area" style="display: none;">
+            <h2>Chat da Sala</h2>
+            <div id="chat-messages"></div>
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem...">
+            <button id="send-chat-btn">Enviar</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/game2.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Redes - Forca (Híbrido)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        #word-display {
+            font-size: 2.5em;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+        }
+        #guesses {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        #guess-input {
+            padding: 10px;
+            font-size: 1.2em;
+            width: 80px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        #guess-btn {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            margin-left: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #guess-btn:hover {
+            background-color: #218838;
+        }
+        #hangman-drawing {
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre; /* Preserva os espaços em branco para o desenho */
+            font-size: 1.5em;
+        }
+        .player-role {
+            font-weight: bold;
+            margin-top: 15px;
+            color: #0056b3;
+        }
+        #word-setter-area {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px dashed #007bff;
+            background-color: #e9f5ff;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container game-container">
+        <h1>Jogo: Forca - Critério na Comunicação (Híbrido)</h1>
+
+        <div id="connection-setup">
+            <input type="text" id="username-input" placeholder="Seu nome de usuário" required>
+            <input type="text" id="room-id-input" placeholder="ID da sala (opcional)">
+            <button id="join-room-btn">Entrar na Sala</button>
+            <p id="connection-status"></p>
+            <p id="players-in-room"></p>
+            <p id="my-sid"></p>
+        </div>
+
+        <div id="game-area" style="display: none;">
+            <p id="game-info">Aguardando definição da palavra...</p>
+            <p class="player-role" id="my-role"></p>
+
+            <div id="word-setter-area" style="display: none;">
+                <h2>Definir a Palavra (Apenas para o "Criador")</h2>
+                <input type="text" id="secret-word-input" placeholder="Digite a palavra secreta" maxlength="15">
+                <button id="set-word-btn">Definir Palavra</button>
+                <p>A palavra será enviada via **TCP** (garantido).</p>
+            </div>
+
+            <div id="game-play-area" style="display: none;">
+                <p id="word-display">_ _ _ _ _</p>
+                <p id="guesses">Letras já tentadas: </p>
+                <p>Erros: <span id="wrong-guesses-count">0</span>/6</p>
+                <div id="hangman-drawing"></div>
+
+                <input type="text" id="guess-input" maxlength="1" placeholder="Letra">
+                <button id="guess-btn">Chutar (UDP - Rápido)</button>
+                <p id="game-feedback"></p>
+            </div>
+            <button id="reset-game-btn" style="display: none;">Reiniciar Jogo</button>
+        </div>
+
+        <div id="chat-area" style="display: none;">
+            <h2>Chat da Sala</h2>
+            <div id="chat-messages"></div>
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem...">
+            <button id="send-chat-btn">Enviar</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/game3.js') }}"></script>
+</body>
+</html>

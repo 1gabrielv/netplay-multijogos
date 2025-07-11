@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabalho de Redes: TCP vs UDP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Bem-vindo ao Mundo das Conexões!</h1>
+        <p>Explore as diferenças entre TCP e UDP através de jogos interativos.</p>
+
+        <div class="game-list">
+            <div class="game-card">
+                <h2>Jogo da Velha (TCP): Confiabilidade Essencial</h2>
+                <p>Neste jogo, cada jogada é crucial e a ordem é fundamental. O uso do **TCP** garante que nenhum movimento seja perdido ou chegue fora de ordem, assegurando a integridade do jogo.</p>
+                <a href="{{ url_for('game_page', game_id='tic-tac-toe') }}" class="btn">Jogar Jogo da Velha</a>
+            </div>
+
+            <div class="game-card">
+                <h2>Pedra, Papel e Tesoura (UDP): Velocidade com Tolerância à Perda</h2>
+                <p>A rapidez é a chave! Pequenas perdas de pacotes ou desordem não comprometem o resultado imediato, pois a ação final (o "lance") é o que importa, mostrando a natureza "sem conexão" do **UDP**.</p>
+                <a href="{{ url_for('game_page', game_id='rock-paper-scissors') }}" class="btn">Jogar PPT</a>
+            </div>
+
+            <div class="game-card">
+                <h2>Forca (Híbrido): Critério na Comunicação</h2>
+                <p>Um jogo que pode se beneficiar de ambos: o **TCP** para a transmissão da palavra secreta e das letras corretas (dados críticos), e o **UDP** para o chat ou palpites rápidos, onde a fluidez é mais importante.</p>
+                <a href="{{ url_for('game_page', game_id='hangman') }}" class="btn">Jogar Forca</a>
+            </div>
+        </div>
+
+        <p class="explanation-hint">
+            Ao jogar, observe como cada tipo de conexão afeta a experiência do jogo.
+        </p>
+    </div>
+</body>
+</html>
