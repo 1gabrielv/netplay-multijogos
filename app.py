@@ -3,23 +3,18 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24) # Usado para sessões Flask, se você usar. Para SocketIO, o Flask-SocketIO cuida da segurança.
+app.config['SECRET_KEY'] = os.urandom(24) 
 socketio = SocketIO(app)
 
-# Dicionário para armazenar o estado dos jogos e salas
-# Exemplo: { 'game_room_id': {'players': [], 'game_state': {}, 'game_type': 'tic-tac-toe', 'usernames': {SID: username}} }
 game_rooms = {}
-
-# Dicionário para mapear SID para username e room_id (para facilitar o disconnect)
 sid_to_user_info = {}
-
 
 # --- Funções de Inicialização dos Jogos ---
 def initialize_tic_tac_toe_game():
     return {
         'board': ['', '', '', '', '', '', '', '', ''],
-        'current_turn': None,  # SID do jogador atual
-        'players_map': {},  # Mapeia SID para 'X' ou 'O'
+        'current_turn': None,
+        'players_map': {},
         'winner': None,
         'moves_count': 0
     }
@@ -32,7 +27,7 @@ def initialize_rps_game():
         'player2_sid': None,
         'round_winner': None,
         'scores': {},  # SID: score
-        'round_ready': 0  # Conta quantos jogadores já escolheram
+        'round_ready': 0
     }
 
 def initialize_hangman_game():
@@ -44,8 +39,8 @@ def initialize_hangman_game():
         'word_display': '',
         'game_over': False,
         'game_winner': None,
-        'setter_sid': None,  # SID do jogador que define a palavra
-        'guesser_sid': None # SID do jogador que adivinha
+        'setter_sid': None,
+        'guesser_sid': None
     }
 
 
@@ -56,7 +51,6 @@ def index():
 
 @app.route('/game/<game_id>')
 def game_page(game_id):
-    # Mapeia game_id para o template HTML e o "tipo" de conexão para descrição
     template_map = {
         'tic-tac-toe': {'template': 'game1.html', 'type': 'TCP'},
         'rock-paper-scissors': {'template': 'game2.html', 'type': 'UDP'},
@@ -67,7 +61,7 @@ def game_page(game_id):
     if game_info:
         return render_template(game_info['template'], game_type=game_info['type'], game_id=game_id)
     else:
-        return redirect(url_for('index')) # Redireciona para a página inicial se o game_id for inválido
+        return redirect(url_for('index'))
 
 
 # --- Eventos de Conexão/Desconexão do SocketIO ---
@@ -91,7 +85,6 @@ def handle_disconnect():
                 if player_sid in room_data['usernames']:
                     del room_data['usernames'][player_sid]
 
-                # Notifica os outros jogadores que alguém saiu
                 emit('player_disconnected', {
                     'sid': player_sid,
                     'username': username,
@@ -104,12 +97,10 @@ def handle_disconnect():
                     del game_rooms[room_id]
                     print(f'Sala {room_id} removida por estar vazia.')
                 elif len(room_data['players']) == 1:
-                    # Se apenas um jogador sobrar, o jogo não pode continuar
                     emit('game_ended_player_left', {
                         'message': 'O outro jogador desconectou. O jogo foi encerrado. Por favor, crie ou entre em uma nova sala.',
                         'room_id': room_id
-                    }, room=room_data['players'][0]) # Envia só para o jogador que ficou
-                    # Remove a sala para forçar o reset no cliente
+                    }, room=room_data['players'][0])
                     del game_rooms[room_id]
                     print(f'Jogo na sala {room_id} encerrado porque um jogador saiu. Sala removida.')
         
@@ -184,8 +175,8 @@ def handle_create_or_join_room(data):
             room_data['game_state'] = initialize_rps_game()
             room_data['game_state']['player1_sid'] = players_sids_in_order[0]
             room_data['game_state']['player2_sid'] = players_sids_in_order[1]
-            room_data['game_state']['scores'][players_sids_in_order[0]] = 0
-            room_data['game_state']['scores'][players_sids_in_order[1]] = 0
+            room_data['game_state']['scores'][players_sids_in_order[0]] = 0 # Inicializa score para o player 1
+            room_data['game_state']['scores'][players_sids_in_order[1]] = 0 # Inicializa score para o player 2
         elif game_id == 'hangman':
             room_data['game_state'] = initialize_hangman_game()
             room_data['game_state']['setter_sid'] = players_sids_in_order[0]
@@ -328,6 +319,11 @@ def handle_rps_choice(data):
         emit('game_error', {'message': 'Jogo não inicializado corretamente. Aguarde o outro jogador.'}, room=player_sid)
         return
 
+    # Certifica que os scores para os jogadores existem
+    for p_sid in [game_state['player1_sid'], game_state['player2_sid']]:
+        if p_sid not in game_state['scores']:
+            game_state['scores'][p_sid] = 0
+
     if player_sid == game_state['player1_sid']:
         if game_state['player1_choice'] is None:
             game_state['player1_choice'] = choice
@@ -371,7 +367,7 @@ def handle_rps_choice(data):
             'player1_choice': p1_choice,
             'player2_choice': p2_choice,
             'winner_sid': winner_sid,
-            'scores': game_state['scores'],
+            'scores': game_state['scores'], # Enviando o dicionário de scores atualizado
             'player1_sid': game_state['player1_sid'],
             'player2_sid': game_state['player2_sid'],
             'usernames': game_rooms[room_id]['usernames']
@@ -541,8 +537,6 @@ def handle_reset_hangman(data):
 
         current_setter = game_rooms[room_id]['game_state'].get('setter_sid')
         
-        # Garante que os SIDs dos jogadores ainda estão na sala
-        # Verifica se o current_setter é de fato um dos players atuais, se não for, define o players[0] como setter
         if current_setter == players[0]: 
             new_setter_sid = players[1]
             new_guesser_sid = players[0]
@@ -565,7 +559,4 @@ def handle_reset_hangman(data):
 
 # --- Função para rodar o servidor ---
 if __name__ == '__main__':
-    # Quando rodando em produção, você provavelmente usaria Gunicorn ou uWSGI com Nginx.
-    # Para desenvolvimento, debug=True e host='0.0.0.0' são úteis.
-    # host='0.0.0.0' permite que outros dispositivos na sua rede local acessem o servidor.
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
