@@ -56,15 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('connect', () => {
-        // Agora, mySidDisplay é atualizado diretamente aqui
         mySidDisplay.textContent = `Seu ID de Conexão (SID): ${socket.id}`;
         connectionStatus.textContent = 'Status: Conectado ao servidor.';
         console.log(`[script.js] Connected to server. My SID: ${socket.id}`);
 
-        // Importante: Se o script do jogo já foi carregado e chamou getMySocketId() antes
-        // da conexão ser estabelecida, ele teria recebido 'null'.
-        // Agora que o socket.id está disponível, podemos forçar um 'reset' ou 'update'
-        // no script do jogo para que ele reavalie mySID e a interface.
         if (typeof window.resetGameSpecific === 'function') {
             window.resetGameSpecific(); 
         }
@@ -93,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.players_in_room === 2) {
              gameArea.style.display = 'block';
-             // No game_start o script de jogo será notificado
         } else {
              gameArea.style.display = 'none'; 
              const waitingMessageElement = document.createElement('p');
@@ -155,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         roomIdInput.value = ''; 
         connectionStatus.textContent = 'O jogo foi encerrado. Digite seu nome de usuário e entre em uma nova sala.';
         playersInRoomDisplay.textContent = 'Jogadores na sala: 0';
-        mySidDisplay.textContent = 'Seu ID de Conexão (SID): Desconectado'; // Atualiza para mostrar que o SID pode mudar
+        mySidDisplay.textContent = 'Seu ID de Conexão (SID): Desconectado'; 
         chatMessages.innerHTML = ''; 
         currentPlayersUsernames = [];
         playersSidsInOrder = [];
