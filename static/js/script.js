@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const roomIdInput = document.getElementById('room-id-input');
     const joinRoomBtn = document.getElementById('join-room-btn');
     const connectionStatus = document.getElementById('connection-status');
-    const playersInRoomDisplay = document.getElementById('players-in-room'); // Renomeado para evitar conflito
-    const mySidDisplay = document.getElementById('my-sid'); // Renomeado
+    const playersInRoomDisplay = document.getElementById('players-in-room');
+    const mySidDisplay = document.getElementById('my-sid');
     const gameArea = document.getElementById('game-area');
     const chatArea = document.getElementById('chat-area');
     const chatMessages = document.getElementById('chat-messages');
@@ -14,12 +14,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendChatBtn = document.getElementById('send-chat-btn');
 
     let currentRoomId = null;
-    let mySocketId = null; // Armazena o SID do cliente atual
-    let currentPlayersUsernames = []; // Armazena os nomes de usuário dos jogadores na sala
+    let currentPlayersUsernames = []; 
+    let playersSidsInOrder = []; 
 
-    // Obter o gameId da URL (ex: /game/tic-tac-toe -> tic-tac-toe)
+    // Obter o gameId da URL
     const pathSegments = window.location.pathname.split('/');
-    const gameId = pathSegments[pathSegments.length - 1]; // Pega o último segmento
+    const gameId = pathSegments[pathSegments.length - 1]; 
+
+    // Torna socket e currentRoomId acessíveis aos scripts de jogo
+    window.socket = socket;
+    window.getCurrentRoomId = () => currentRoomId;
+    // Esta função agora SEMPRE retornará o socket.id atual.
+    // Assim, 'mySID' nos scripts de jogo pode ser lido a qualquer momento.
+    window.getMySocketId = () => socket.id; 
+    window.getCurrentPlayersUsernames = () => currentPlayersUsernames;
+    window.getPlayersSidsInOrder = () => playersSidsInOrder;
 
     joinRoomBtn.addEventListener('click', () => {
         const username = usernameInput.value.trim();
@@ -36,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = chatInput.value.trim();
         if (message && currentRoomId) {
             socket.emit('chat_message', { room_id: currentRoomId, message: message });
-            chatInput.value = ''; // Limpa o input
+            chatInput.value = ''; 
         }
     });
 
@@ -47,34 +56,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('connect', () => {
+        // Agora, mySidDisplay é atualizado diretamente aqui
+        mySidDisplay.textContent = `Seu ID de Conexão (SID): ${socket.id}`;
         connectionStatus.textContent = 'Status: Conectado ao servidor.';
-        mySocketId = socket.id;
-        mySidDisplay.textContent = `Seu ID de Conexão (SID): ${mySocketId}`;
+        console.log(`[script.js] Connected to server. My SID: ${socket.id}`);
+
+        // Importante: Se o script do jogo já foi carregado e chamou getMySocketId() antes
+        // da conexão ser estabelecida, ele teria recebido 'null'.
+        // Agora que o socket.id está disponível, podemos forçar um 'reset' ou 'update'
+        // no script do jogo para que ele reavalie mySID e a interface.
+        if (typeof window.resetGameSpecific === 'function') {
+            window.resetGameSpecific(); 
+        }
     });
 
     socket.on('error', (data) => {
         connectionStatus.textContent = `Erro: ${data.message}`;
         alert(data.message);
+        console.error(`[script.js] Server error: ${data.message}`);
     });
 
     socket.on('room_joined', (data) => {
         currentRoomId = data.room_id;
         currentPlayersUsernames = data.current_players;
+        playersSidsInOrder = data.players_sids || []; 
         connectionStatus.textContent = `Status: Conectado à sala ${currentRoomId} como ${data.username}.`;
         playersInRoomDisplay.textContent = `Jogadores na sala: ${data.players_in_room} (${data.current_players.join(', ')})`;
         document.getElementById('connection-setup').style.display = 'none';
         chatArea.style.display = 'block';
 
-        // Inicializa o chat com uma mensagem de sistema
         const messageElement = document.createElement('p');
         messageElement.className = 'chat-message system-message';
         messageElement.innerHTML = `<em>Você entrou na sala.</em>`;
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        if (data.players_in_room === 2) {
+             gameArea.style.display = 'block';
+             // No game_start o script de jogo será notificado
+        } else {
+             gameArea.style.display = 'none'; 
+             const waitingMessageElement = document.createElement('p');
+             waitingMessageElement.className = 'chat-message system-message';
+             waitingMessageElement.innerHTML = '<em>Aguardando outro jogador para iniciar o jogo...</em>';
+             chatMessages.appendChild(waitingMessageElement);
+             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        console.log(`[script.js] Room joined: ${currentRoomId}, Players: ${data.players_in_room}`);
     });
 
     socket.on('player_joined', (data) => {
-        currentPlayersUsernames = data.current_players; // Atualiza a lista de nomes de usuários
+        currentPlayersUsernames = data.current_players; 
+        playersSidsInOrder = data.players_sids || []; 
         playersInRoomDisplay.textContent = `Jogadores na sala: ${data.players_in_room} (${currentPlayersUsernames.join(', ')})`;
         
         const messageElement = document.createElement('p');
@@ -82,11 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.innerHTML = `<em>${data.username} entrou na sala.</em>`;
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        console.log(`[script.js] Player joined: ${data.username}, Total players: ${data.players_in_room}`);
     });
 
     socket.on('player_disconnected', (data) => {
-        // Remove o jogador da lista e atualiza o display
-        currentPlayersUsernames = currentPlayersUsernames.filter(username => username !== data.username);
+        currentPlayersUsernames = data.current_players; 
         playersInRoomDisplay.textContent = `Jogadores na sala: ${data.players_in_room} (${currentPlayersUsernames.join(', ')})`;
         
         const messageElement = document.createElement('p');
@@ -94,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.innerHTML = `<em>${data.username} (${data.sid.substring(0, 5)}...) saiu da sala.</em>`;
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        console.log(`[script.js] Player disconnected: ${data.username}`);
     });
 
     socket.on('new_chat_message', (data) => {
@@ -101,35 +135,36 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.className = 'chat-message';
         messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
         chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Rola para o final
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     });
 
     socket.on('game_start', (data) => {
-        gameArea.style.display = 'block'; // Mostra a área do jogo
-        connectionStatus.textContent += ' O jogo começou!';
+        gameArea.style.display = 'block'; 
+        connectionStatus.textContent = `Status: Conectado à sala ${currentRoomId} como ${usernameInput.value}. O jogo começou!`;
         alert('O jogo vai começar!');
-        // Os scripts de jogo (game1.js, etc.) já estarão escutando 'game_start'
-        // e farão suas inicializações específicas.
+        console.log(`[script.js] Game started in room ${currentRoomId}.`);
     });
 
     socket.on('game_ended_player_left', (data) => {
         alert(data.message);
-        // Opcional: Redirecionar ou recarregar a página para um novo início
-        // window.location.reload(); 
-        // Ou apenas desabilitar a área do jogo e mostrar a tela de conexão novamente
+        currentRoomId = null;
         gameArea.style.display = 'none';
         chatArea.style.display = 'none';
         document.getElementById('connection-setup').style.display = 'block';
-        connectionStatus.textContent = 'O jogo foi encerrado.';
+        usernameInput.value = ''; 
+        roomIdInput.value = ''; 
+        connectionStatus.textContent = 'O jogo foi encerrado. Digite seu nome de usuário e entre em uma nova sala.';
         playersInRoomDisplay.textContent = 'Jogadores na sala: 0';
-        mySidDisplay.textContent = `Seu ID de Conexão (SID): ${mySocketId}`;
-        currentRoomId = null;
+        mySidDisplay.textContent = 'Seu ID de Conexão (SID): Desconectado'; // Atualiza para mostrar que o SID pode mudar
+        chatMessages.innerHTML = ''; 
+        currentPlayersUsernames = [];
+        playersSidsInOrder = [];
+        console.log(`[script.js] Game ended due to player left in room ${data.room_id}.`);
+        
+        if (typeof window.resetGameSpecific === 'function') {
+            window.resetGameSpecific(); 
+        }
     });
 
-
-    // Torna socket e currentRoomId e mySocketId acessíveis aos scripts de jogo
-    window.socket = socket;
-    window.getCurrentRoomId = () => currentRoomId;
-    window.getMySocketId = () => mySocketId;
-    window.getCurrentPlayersUsernames = () => currentPlayersUsernames; // Adicionado
+    console.log('[script.js] Script loaded. Waiting for socket connection.');
 });
